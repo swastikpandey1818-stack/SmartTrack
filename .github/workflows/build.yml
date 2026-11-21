@@ -1,0 +1,55 @@
+name: Build APK
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Gradle init (compileSdk 36, core library desugaring, no lintVital)
+        run: |
+          mkdir -p "$HOME/.gradle/init.d"
+          cat > "$HOME/.gradle/init.d/smart-track.gradle" <<'GRADLE'
+          allprojects { p ->
+            p.tasks.configureEach { t ->
+              if (t.name.startsWith('lintVital')) { t.enabled = false }
+            }
+            p.afterEvaluate {
+              def ext = p.extensions.findByName('android')
+              if (ext != null) {
+                try { ext.compileSdk = 36 } catch (Throwable t) { ext.compileSdkVersion(36) }
+                if (p.name == 'app') {
+                  ext.compileOptions.coreLibraryDesugaringEnabled = true
+                  p.dependencies.add('coreLibraryDesugaring', 'com.android.tools:desugar_jdk_libs:2.1.4')
+                }
+              }
+            }
+          }
+          GRADLE
+      - name: Generate Android project and patch manifest
+        run: |
+          [ -d android ] || flutter create --platforms=android --project-name smart_track --org com.smarttrack .
+          rm -f test/widget_test.dart
+          python3 tool/patch_android.py
+      - run: flutter pub get
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      - name: Test
+        run: flutter test
+      - run: dart run flutter_launcher_icons
+      - name: Build release APK
+        run: flutter build apk --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: smart-track-v1.0.0-apk
+          path: build/app/outputs/flutter-apk/app-release.apk

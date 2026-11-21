@@ -1,0 +1,28 @@
+name: smart_track
+description: Smart Track - ESP32 smart plant care
+publish_to: 'none'
+version: 1.0.0+1
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.2
+  sqflite: ^2.3.3
+  path: ^1.9.0
+  shared_preferences: ^2.3.2
+  flutter_local_notifications: ^18.0.1
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_launcher_icons: ^0.14.1
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icon/icon.png"
+  adaptive_icon_background: "#04120C"
+  adaptive_icon_foreground: "assets/icon/icon_fg.png"
